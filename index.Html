@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Turbo Track - Max Volume & Turbo Smooth</title>
+    <title>Turbo Track - Private VIP Access</title>
     <style>
         * {
             box-sizing: border-box;
@@ -36,7 +36,7 @@
             display: block;
         }
         
-        /* --- بخش جدید: صفحه ورود فوق لاکچری و مینیمال --- */
+        /* --- بخش صفحه ورود VIP با سیستم خطای پیشرفته --- */
         #vipLoginScreen {
             position: absolute;
             top: 0;
@@ -101,13 +101,25 @@
             text-align: left;
             direction: ltr;
             transition: all 0.3s ease;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
         .vip-input:focus {
             border-color: #00e5ff;
             box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
             background: #0b111e;
         }
+        
+        #loginErrorMsg {
+            color: #ff2222;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: left;
+            display: none;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 10px rgba(255, 34, 34, 0.2);
+        }
+
         .vip-btn {
             width: 100%;
             padding: 16px;
@@ -125,10 +137,9 @@
         }
         .vip-btn:active {
             transform: scale(0.98);
-            box-shadow: 0 4px 10px rgba(0, 229, 255, 0.2);
         }
 
-        /* --- استایل‌های قبلی بازی --- */
+        /* --- استایل‌های اصلی بازی --- */
         #topBar {
             position: absolute;
             top: 15px;
@@ -158,9 +169,7 @@
             padding: 8px 14px; 
             flex-grow: 1;
         }
-        .sb-item {
-            white-space: nowrap;
-        }
+        .sb-item { white-space: nowrap; }
         .pause-btn {
             padding: 7px 15px;
             font-size: 11px;
@@ -220,16 +229,6 @@
             z-index: 10;
         }
         
-        #welcomeScreen { background: #07090e; display: none; } /* به خاطر صفحه ورود ستاره مخفی شد */
-        .welcome-title {
-            color: #00e5ff;
-            font-size: 36px;
-            font-weight: 900;
-            letter-spacing: 2px;
-            margin-bottom: 40px;
-            text-shadow: 0 0 25px rgba(0, 229, 255, 0.5);
-        }
-        
         #gameOverScreen { background: rgba(7, 9, 14, 0.96); display: none; }
         .game-over-title {
             color: #ff2222;
@@ -268,7 +267,7 @@
             font-size: 280px; 
             font-weight: 900;
             color: #facc15; 
-            text-shadow: 0 0 60px rgba(250, 204, 21, 0.5), 0 4px 20px rgba(0,0,0,0.6);
+            text-shadow: 0 0 60px rgba(250, 204, 21, 0.5);
             opacity: 0;
             transform: scale(1.7);
             transition: transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.75s ease-out;
@@ -310,12 +309,14 @@
     <div id="vipLoginScreen">
         <div class="vip-card">
             <div class="vip-logo">TURBO TRACK</div>
-            <div class="vip-subtitle">Next-Gen Racing Experience</div>
+            <div class="vip-subtitle">Private VIP Access</div>
             
-            <label class="vip-label" for="telegramId">ENTER YOUR TELEGRAM ID:</label>
-            <input type="text" id="telegramId" class="vip-input" placeholder="@username" autocomplete="off" spellcheck="false">
+            <label class="vip-label" for="telegramId">ENTER TELEGRAM NUMERIC ID:</label>
+            <input type="tel" id="telegramId" class="vip-input" placeholder="e.g. 58493022" autocomplete="off" pattern="[0-9]*">
             
-            <button id="vipSubmitBtn" class="vip-btn">Connect & Race</button>
+            <div id="loginErrorMsg">✕ ACCESS DENIED: Invalid Chat ID</div>
+            
+            <button id="vipSubmitBtn" class="vip-btn">Verify & Play</button>
         </div>
     </div>
 
@@ -337,11 +338,6 @@
         <button id="btnRight" class="btn">▶</button>
     </div>
 
-    <div id="welcomeScreen" class="screen-overlay">
-        <div class="welcome-title">TURBO TRACK</div>
-        <button id="startBtn" class="menu-btn">Start Race</button>
-    </div>
-
     <div id="gameOverScreen" class="screen-overlay">
         <div class="game-over-title">GAME OVER</div>
         <button id="restartBtn" class="menu-btn">Race Again</button>
@@ -353,6 +349,16 @@
 </div>
 
 <script>
+// ==========================================
+// 🔴 لیست آیدی‌های عددی مجاز (WHITE-LIST)
+// آیدی‌های عددی مجاز را بدون کوتیشن و فقط به صورت عدد اینجا بنویسید.
+// ==========================================
+const ALLOWED_USERS = [
+    2049044424,    // آیدی عددی خودت را دقیقاً جای این عدد بگذار
+    987654321,    // آیدی عددی نفر دوم
+    555444321
+];
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = true;
@@ -360,12 +366,11 @@ ctx.imageSmoothingEnabled = true;
 const vipLoginScreen = document.getElementById('vipLoginScreen');
 const vipSubmitBtn = document.getElementById('vipSubmitBtn');
 const telegramIdInput = document.getElementById('telegramId');
+const loginErrorMsg = document.getElementById('loginErrorMsg');
 
-const welcomeScreen = document.getElementById('welcomeScreen');
 const gameOverScreen = document.getElementById('gameOverScreen');
 const countdownOverlay = document.getElementById('countdownOverlay');
 const countdownText = document.getElementById('countdownText');
-const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 const pauseBtn = document.getElementById('pauseBtn');
 
@@ -380,7 +385,6 @@ function resizeCanvas() {
 }
 resizeCanvas();
 
-// --- بخش صوتی تقویت‌شده با ولوم بالا و کاملاً هماهنگ ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let musicInterval = null;
 let musicStep = 0;
@@ -417,6 +421,7 @@ function startMusic() { stopMusic(); musicStep = 0; musicInterval = setInterval(
 function stopMusic() { if (musicInterval) { clearInterval(musicInterval); musicInterval = null; } }
 
 function playClickSound() { playSoundEffect(800, 0.02, 0.04, 'sine'); }
+function playErrorSound() { playSoundEffect(150, 0.25, 0.4, 'sawtooth'); }
 
 function playMarioDeathSound() {
     const mNotes = [440, 392, 349, 293];
@@ -435,7 +440,6 @@ function playRewardSound() {
     });
 }
 
-// --- بخش گرافیک و پیش‌رندر ماشین‌ها ---
 const stageJobs = [
     { key: 'taxi', name: 'TAXI', color: '#facc15', type: 'STANDARD' },
     { key: 'police', name: 'POLICE', color: '#1e293b', type: 'SPEED_OBSTACLE' }, 
@@ -458,37 +462,24 @@ function generateVehicleGraphicsCache(key, color, name, isPlayer = false) {
     c.fillStyle = '#64748b';
     c.fillRect(0, 20, 10, 22); c.fillRect(80, 20, 10, 22);
     c.fillRect(0, 92, 10, 22); c.fillRect(80, 92, 10, 22);
-    
-    c.fillStyle = '#94a3b8';
-    c.fillRect(2, 23, 6, 16); c.fillRect(82, 23, 6, 16);
-    c.fillRect(2, 95, 6, 16); c.fillRect(82, 95, 6, 16);
 
     c.fillStyle = color;
     c.beginPath();
     c.moveTo(14, 35); c.bezierCurveTo(14, 16, 24, 6, 45, 6); c.bezierCurveTo(66, 6, 76, 16, 76, 35);
     c.lineTo(78, 96); c.bezierCurveTo(78, 112, 70, 122, 45, 122); c.bezierCurveTo(20, 122, 12, 112, 12, 96);
     c.closePath(); c.fill();
-    c.lineWidth = 2; c.strokeStyle = '#090d16'; c.stroke();
-
-    c.strokeStyle = 'rgba(0,0,0,0.15)'; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(25, 8); c.bezierCurveTo(32, 26, 36, 36, 45, 36); c.bezierCurveTo(54, 36, 58, 26, 65, 8); c.stroke();
 
     c.fillStyle = 'rgba(15,23,42,0.88)';
     c.beginPath();
     c.moveTo(20, 44); c.bezierCurveTo(22, 34, 30, 30, 45, 30); c.bezierCurveTo(60, 30, 68, 34, 70, 44);
     c.lineTo(72, 74); c.bezierCurveTo(72, 84, 66, 88, 45, 88); c.bezierCurveTo(24, 88, 18, 84, 18, 74);
-    c.closePath(); c.fill(); c.strokeStyle = '#0f172a'; c.lineWidth = 1; c.stroke();
-
-    c.strokeStyle = 'rgba(255,255,255,0.2)'; c.lineWidth = 2; c.beginPath(); c.moveTo(24, 42); c.quadraticCurveTo(32, 34, 45, 34); c.stroke();
+    c.closePath(); c.fill();
 
     c.fillStyle = '#ffffff'; c.fillRect(14, 12, 12, 5); c.fillRect(64, 12, 12, 5);
-
-    c.fillStyle = isPlayer ? '#ff1111' : '#ff4400';
-    c.fillRect(16, 116, 16, 4); c.fillRect(58, 116, 16, 4);
+    c.fillStyle = isPlayer ? '#ff1111' : '#ff4400'; c.fillRect(16, 116, 16, 4); c.fillRect(58, 116, 16, 4);
 
     c.fillStyle = '#ffffff'; c.font = '900 9px sans-serif'; c.textAlign = 'center';
     c.fillText(name, 45, 64);
-
     vehicleCacheCanvases[key] = cacheCanvas;
 }
 
@@ -502,26 +493,12 @@ function buildAllGraphicsCaches() {
 }
 buildAllGraphicsCaches();
 
-let score = 0;
-let currentStageIndex = 0; 
-let passedCarsCount = 0; 
-let isPlaying = false;
-let isPaused = false; 
-let isBurning = false; 
-let lastTime = 0;
-let roadLinesY = 0;
-let enemySpawnTimer = 0;
-let enemies = [];
-let particles = [];
-let sceneryItems = [];
-let lastSpawnLane = -1; 
+let score = 0; let currentStageIndex = 0; let passedCarsCount = 0; 
+let isPlaying = false; let isPaused = false; let isBurning = false; 
+let lastTime = 0; let roadLinesY = 0; let enemySpawnTimer = 0;
+let enemies = []; let particles = []; let sceneryItems = []; let lastSpawnLane = -1; 
 
-const player = {
-    x: 250, y: 520, 
-    width: 58, height: 84, 
-    speed: 520, 
-    movingLeft: false, movingRight: false
-};
+const player = { x: 250, y: 520, width: 58, height: 84, speed: 520, movingLeft: false, movingRight: false };
 
 function updateScoreUI() {
     sbPass.innerText = `PASS: ${passedCarsCount}/10`;
@@ -540,9 +517,7 @@ function checkStageProgression() {
 }
 
 function showRewardNotification(text) {
-    rewardToast.innerText = text;
-    rewardToast.classList.add('show');
-    playRewardSound();
+    rewardToast.innerText = text; rewardToast.classList.add('show'); playRewardSound();
     setTimeout(() => { rewardToast.classList.remove('show'); }, 3400);
 }
 
@@ -555,19 +530,13 @@ function initScenery() {
 }
 
 function updateAndDrawScenery(speed, dt) {
-    ctx.fillStyle = '#1f442b';
-    ctx.fillRect(0, 0, canvas.width * 0.08, canvas.height);
-    ctx.fillRect(canvas.width * 0.92, 0, canvas.width * 0.08, canvas.height);
-
-    const len = sceneryItems.length;
-    ctx.fillStyle = '#22c55e';
+    ctx.fillStyle = '#1f442b'; ctx.fillRect(0, 0, canvas.width * 0.08, canvas.height); ctx.fillRect(canvas.width * 0.92, 0, canvas.width * 0.08, canvas.height);
+    const len = sceneryItems.length; ctx.fillStyle = '#22c55e';
     for(let i=0; i<len; i++) {
         const item = sceneryItems[i];
         if (isPlaying && !isPaused && !isBurning) item.y += speed * dt;
         if (item.y > canvas.height + 40) item.y = -40;
-
         ctx.beginPath(); ctx.moveTo(item.x, item.y + 10); ctx.lineTo(item.x - 10, item.y + 30); ctx.lineTo(item.x + 10, item.y + 30); ctx.closePath(); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(item.x, item.y); ctx.lineTo(item.x - 7, item.y + 16); ctx.lineTo(item.x + 7, item.y + 16); ctx.closePath(); ctx.fill();
     }
 }
 
@@ -575,37 +544,17 @@ class ExplodeParticle {
     constructor(x, y, isFire = false) {
         this.x = x; this.y = y; this.isFire = isFire;
         this.radius = isFire ? Math.random() * 6 + 2 : Math.random() * 2.5 + 1;
-        
         const angle = Math.random() * Math.PI * 2;
         const speed = isFire ? Math.random() * 120 + 30 : Math.random() * 180 + 80;
-        
-        this.vx = Math.cos(angle) * speed; 
-        this.vy = isFire ? (Math.sin(angle) * speed * 0.4) - 45 : Math.sin(angle) * speed; 
-        
-        this.alpha = 1;
-        this.decay = isFire ? Math.random() * 0.9 + 0.9 : 1.6;
-        
-        if (isFire) {
-            this.color = ['#d32f2f', '#f57c00', '#fbc02d', '#5c6bc0', '#212121'][Math.floor(Math.random() * 5)];
-        } else {
-            this.color = '#00e5ff';
-        }
+        this.vx = Math.cos(angle) * speed; this.vy = isFire ? (Math.sin(angle) * speed * 0.4) - 45 : Math.sin(angle) * speed;
+        this.alpha = 1; this.decay = isFire ? Math.random() * 0.9 + 0.9 : 1.6;
+        this.color = isFire ? '#f57c00' : '#00e5ff';
     }
-    update(dt) { 
-        this.x += this.vx * dt; 
-        this.y += this.vy * dt; 
-        this.alpha -= this.decay * dt; 
-        if (this.isFire && this.radius > 0.4) this.radius -= 1.8 * dt; 
-    }
+    update(dt) { this.x += this.vx * dt; this.y += this.vy * dt; this.alpha -= this.decay * dt; }
     draw() {
         if (this.alpha <= 0) return;
-        ctx.save(); 
-        ctx.globalAlpha = this.alpha; 
-        ctx.fillStyle = this.color;
-        ctx.beginPath(); 
-        ctx.arc(this.x, this.y, Math.max(0.1, this.radius), 0, Math.PI * 2); 
-        ctx.fill(); 
-        ctx.restore();
+        ctx.save(); ctx.globalAlpha = this.alpha; ctx.fillStyle = this.color;
+        ctx.beginPath(); ctx.arc(this.x, this.y, Math.max(0.1, this.radius), 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
 }
 
@@ -614,59 +563,36 @@ class EnemyCar {
         this.jobSpec = stageJobs[currentStageIndex];
         this.width = (this.jobSpec.type === 'BIG_SIZE') ? 66 : 58;
         this.height = (this.jobSpec.type === 'BIG_SIZE') ? 104 : 84;
-        
         const lanes = [canvas.width * 0.23, canvas.width * 0.5, canvas.width * 0.77];
         let targetLaneIndex = Math.floor(Math.random() * lanes.length);
-        if (targetLaneIndex === lastSpawnLane) {
-            targetLaneIndex = (targetLaneIndex + 1) % lanes.length;
-        }
+        if (targetLaneIndex === lastSpawnLane) targetLaneIndex = (targetLaneIndex + 1) % lanes.length;
         lastSpawnLane = targetLaneIndex;
-        
-        this.x = lanes[targetLaneIndex];
-        this.y = -130;
-        this.speed = 490 + (currentStageIndex * 115); 
-        this.passed = false;
+        this.x = lanes[targetLaneIndex]; this.y = -130;
+        this.speed = 490 + (currentStageIndex * 115); this.passed = false;
         this.cacheKey = this.jobSpec.key + '_' + currentStageIndex;
     }
     update(dt) { this.y += this.speed * dt; }
     draw() {
         const imgCache = vehicleCacheCanvases[this.cacheKey];
-        if (imgCache) {
-            ctx.drawImage(imgCache, this.x - this.width/2, this.y - this.height/2, this.width, this.height);
-        }
+        if (imgCache) ctx.drawImage(imgCache, this.x - this.width/2, this.y - this.height/2, this.width, this.height);
     }
 }
 
 function handleEnemies(dt) {
     if (!isPaused && !isBurning) enemySpawnTimer += dt;
-    
-    let currentType = stageJobs[currentStageIndex].type;
-    let baseInterval = (currentType === 'SPEED_OBSTACLE' || currentType === 'CHAOS') ? 0.44 : 0.82 - (currentStageIndex * 0.08);
-    const spawnInterval = Math.max(0.32, baseInterval);
-    
-    if (enemySpawnTimer > spawnInterval && !isPaused && !isBurning) {
-        enemies.push(new EnemyCar());
-        enemySpawnTimer = 0;
+    let baseInterval = 0.82 - (currentStageIndex * 0.08);
+    if (enemySpawnTimer > Math.max(0.32, baseInterval) && !isPaused && !isBurning) {
+        enemies.push(new EnemyCar()); enemySpawnTimer = 0;
     }
-
     for (let i = enemies.length - 1; i >= 0; i--) {
         if (!isPaused && !isBurning) enemies[i].update(dt);
         enemies[i].draw();
-
         if (!enemies[i].passed && enemies[i].y > player.y + player.height / 2) {
-            enemies[i].passed = true;
-            score += 25;
-            checkStageProgression();
+            enemies[i].passed = true; score += 25; checkStageProgression();
         }
-
-        if (enemies[i].y > canvas.height + 130) {
-            enemies.splice(i, 1);
-            continue;
-        }
-
+        if (enemies[i].y > canvas.height + 130) { enemies.splice(i, 1); continue; }
         if (!isBurning && intersects(player.x, player.y, player.width, player.height, enemies[i].x, enemies[i].y, enemies[i].width, enemies[i].height)) {
-            triggerCarBurnEffect();
-            return;
+            triggerCarBurnEffect(); return;
         }
     }
 }
@@ -676,78 +602,45 @@ function intersects(x1, y1, w1, h1, x2, y2, w2, h2) {
 }
 
 function triggerCarBurnEffect() {
-    isBurning = true;
-    stopMusic(); 
-    playMarioDeathSound();
-    
+    isBurning = true; stopMusic(); playMarioDeathSound();
     let burnCounter = 0;
     const burnInterval = setInterval(() => {
-        for (let p = 0; p < 6; p++) {
-            particles.push(new ExplodeParticle(player.x + (Math.random()*20 - 10), player.y + (Math.random()*26 - 13), true));
-        }
+        for (let p = 0; p < 6; p++) particles.push(new ExplodeParticle(player.x, player.y, true));
         burnCounter++;
-        if (burnCounter > 16) { 
-            clearInterval(burnInterval);
-            gameOver();
-        }
+        if (burnCounter > 16) { clearInterval(burnInterval); gameOver(); }
     }, 45);
 }
 
 function drawRoad(dt) {
-    ctx.fillStyle = '#171c24';
-    ctx.fillRect(canvas.width * 0.08, 0, canvas.width * 0.84, canvas.height);
-
-    const leftLimit = canvas.width * 0.08;
-    const rightLimit = canvas.width * 0.92 - 6;
-    const currentRoadSpeed = 520 + (currentStageIndex * 115);
-
-    updateAndDrawScenery(currentRoadSpeed, dt);
-
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(leftLimit, 0, 6, canvas.height);
-    ctx.fillRect(rightLimit, 0, 6, canvas.height);
-
+    ctx.fillStyle = '#171c24'; ctx.fillRect(canvas.width * 0.08, 0, canvas.width * 0.84, canvas.height);
+    const leftLimit = canvas.width * 0.08; const rightLimit = canvas.width * 0.92 - 6;
+    updateAndDrawScenery(520 + (currentStageIndex * 115), dt);
+    ctx.fillStyle = '#f59e0b'; ctx.fillRect(leftLimit, 0, 6, canvas.height); ctx.fillRect(rightLimit, 0, 6, canvas.height);
     if (isPlaying && !isPaused && !isBurning) {
         if (player.x - player.width / 2 <= leftLimit + 6 || player.x + player.width / 2 >= rightLimit) {
-            triggerCarBurnEffect();
-            return;
+            triggerCarBurnEffect(); return;
         }
     }
-
     ctx.fillStyle = '#ffffff';
-    if (!isPaused && !isBurning) roadLinesY = (roadLinesY + currentRoadSpeed * dt) % 70;
-
+    if (!isPaused && !isBurning) roadLinesY = (roadLinesY + (520 + (currentStageIndex * 115)) * dt) % 70;
     for (let y = roadLinesY - 70; y < canvas.height; y += 70) {
-        ctx.fillRect(canvas.width * 0.38 - 1.5, y, 3, 35);
-        ctx.fillRect(canvas.width * 0.62 - 1.5, y, 3, 35);
+        ctx.fillRect(canvas.width * 0.38 - 1.5, y, 3, 35); ctx.fillRect(canvas.width * 0.62 - 1.5, y, 3, 35);
     }
 }
 
 function startCountdown() {
-    welcomeScreen.style.display = 'none';
-    gameOverScreen.style.display = 'none';
-    pauseBtn.style.display = 'none';
-    countdownOverlay.style.display = 'flex';
-    
-    let states = ['3', '2', '1'];
-    let current = 0;
-
+    gameOverScreen.style.display = 'none'; pauseBtn.style.display = 'none'; countdownOverlay.style.display = 'flex';
+    let states = ['3', '2', '1']; let current = 0;
     function nextTick() {
         if (current < states.length) {
-            countdownText.innerText = states[current];
-            countdownText.classList.remove('animate');
-            void countdownText.offsetWidth; 
-            countdownText.classList.add('animate');
-            current++;
-            setTimeout(nextTick, 850);
+            countdownText.innerText = states[current]; countdownText.classList.remove('animate');
+            void countdownText.offsetWidth; countdownText.classList.add('animate');
+            current++; setTimeout(nextTick, 850);
         } else {
-            countdownOverlay.style.display = 'none';
-            playBeep();
+            countdownOverlay.style.display = 'none'; playBeep();
             isPlaying = true; isPaused = false; isBurning = false;
             pauseBtn.innerText = "Pause"; pauseBtn.style.display = 'block';
-            lastTime = performance.now();
-            startMusic(); 
-            requestAnimationFrame(loop);
+            lastTime = performance.now(); startMusic(); requestAnimationFrame(loop);
         }
     }
     nextTick();
@@ -755,121 +648,72 @@ function startCountdown() {
 
 pauseBtn.addEventListener('click', () => {
     if (isBurning) return;
-    isPaused = !isPaused;
-    pauseBtn.innerText = isPaused ? "Resume" : "Pause";
+    isPaused = !isPaused; pauseBtn.innerText = isPaused ? "Resume" : "Pause";
     if (!isPaused) { lastTime = performance.now(); requestAnimationFrame(loop); }
 });
 
-function gameOver() { 
-    isPlaying = false; 
-    pauseBtn.style.display = 'none'; 
-    gameOverScreen.style.display = 'flex'; 
-}
+function gameOver() { isPlaying = false; pauseBtn.style.display = 'none'; gameOverScreen.style.display = 'flex'; }
 
 function resetGame() {
     if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-    stopMusic(); 
-    score = 0; currentStageIndex = 0; passedCarsCount = 0; lastSpawnLane = -1;
-    isBurning = false;
-    updateScoreUI();
-    
-    resizeCanvas();
-    player.x = canvas.width / 2; player.y = 520; 
-    enemies = []; particles = []; enemySpawnTimer = -0.1;
-    initScenery();
-    startCountdown();
+    stopMusic(); score = 0; currentStageIndex = 0; passedCarsCount = 0; lastSpawnLane = -1; isBurning = false;
+    updateScoreUI(); resizeCanvas(); player.x = canvas.width / 2; player.y = 520;
+    enemies = []; particles = []; enemySpawnTimer = -0.1; initScenery(); startCountdown();
 }
 
 function loop(currentTime) {
     if (!isPlaying || isPaused) return;
-
-    let dt = (currentTime - lastTime) / 1000;
-    if (dt > 0.016) dt = 0.016; 
-    lastTime = currentTime;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawRoad(dt);
-
+    let dt = (currentTime - lastTime) / 1000; if (dt > 0.016) dt = 0.016; lastTime = currentTime;
+    ctx.clearRect(0, 0, canvas.width, canvas.height); drawRoad(dt);
     if (isPlaying && !isPaused && !isBurning) {
-        if (player.movingLeft) player.x -= 8.5;
-        if (player.movingRight) player.x += 8.5;
+        if (player.movingLeft) player.x -= 8.5; if (player.movingRight) player.x += 8.5;
     }
-
     if (!isBurning) {
         const pCache = vehicleCacheCanvases['player'];
-        if (pCache) {
-            ctx.drawImage(pCache, player.x - player.width/2, player.y - player.height/2, player.width, player.height);
-        }
+        if (pCache) ctx.drawImage(pCache, player.x - player.width/2, player.y - player.height/2, player.width, player.height);
     }
-
     for (let i = particles.length - 1; i >= 0; i--) {
-        particles[i].update(dt); particles[i].draw();
-        if (particles[i].alpha <= 0) particles.splice(i, 1);
+        particles[i].update(dt); particles[i].draw(); if (particles[i].alpha <= 0) particles.splice(i, 1);
     }
-
-    handleEnemies(dt);
-    if (isPlaying && !isPaused) requestAnimationFrame(loop);
+    handleEnemies(dt); if (isPlaying && !isPaused) requestAnimationFrame(loop);
 }
 
-// گوش به زنگ بودن دکمه ثبت نام صفحه ورود جدید
+// ==========================================
+// 🔐 سیستم احراز هویت با آیدی عددی
+// ==========================================
 vipSubmitBtn.addEventListener('click', () => {
-    const userId = telegramIdInput.value.trim();
-    if (userId === "") {
-        alert("Please enter your Telegram ID to start the race!");
-        return;
+    // تبدیل ورودی به عدد خالص
+    const inputId = parseInt(telegramIdInput.value.trim(), 10);
+    
+    loginErrorMsg.style.display = "none";
+    telegramIdInput.style.borderColor = "rgba(255, 255, 255, 0.08)";
+
+    // چک کردن وجود عدد در لیست مجاز
+    if (!isNaN(inputId) && ALLOWED_USERS.includes(inputId)) {
+        playClickSound();
+        
+        vipLoginScreen.style.opacity = "0";
+        vipLoginScreen.style.visibility = "hidden";
+        
+        setTimeout(() => {
+            resetGame();
+        }, 400);
+    } else {
+        playErrorSound();
+        loginErrorMsg.style.display = "block";
+        telegramIdInput.style.borderColor = "#ff2222";
     }
-    
-    playClickSound();
-    // ذخیره آیدی در کنسول مرورگر جهت بررسی‌های بعدی پروژه
-    console.log("Player Telegram ID connected:", userId);
-    
-    // انیمیشن خروج صفحه ورود لاکچری و اجرای مستقیم بازی
-    vipLoginScreen.style.opacity = "0";
-    vipLoginScreen.style.visibility = "hidden";
-    
-    setTimeout(() => {
-        resetGame();
-    }, 400);
 });
 
-// اجرای ورود مجدد هنگام کلیک روی ریس اگین
-restartBtn.addEventListener('click', () => {
-    gameOverScreen.style.display = 'none';
-    resetGame();
-});
+restartBtn.addEventListener('click', () => { gameOverScreen.style.display = 'none'; resetGame(); });
 
-const btnLeft = document.getElementById('btnLeft');
-const btnRight = document.getElementById('btnRight');
+const btnLeft = document.getElementById('btnLeft'); const btnRight = document.getElementById('btnRight');
+btnLeft.addEventListener('touchstart', (e) => { if (e.cancelable) e.preventDefault(); if(!isPaused && !isBurning) { player.movingLeft = true; playClickSound(); } }, { passive: false });
+btnLeft.addEventListener('touchend', (e) => { player.movingLeft = false; }, { passive: false });
+btnRight.addEventListener('touchstart', (e) => { if (e.cancelable) e.preventDefault(); if(!isPaused && !isBurning) { player.movingRight = true; playClickSound(); } }, { passive: false });
+btnRight.addEventListener('touchend', (e) => { player.movingRight = false; }, { passive: false });
 
-btnLeft.addEventListener('mousedown', (e) => { if(!isPaused && !isBurning) { player.movingLeft = true; playClickSound(); } });
-btnLeft.addEventListener('mouseup', () => player.movingLeft = false);
-btnLeft.addEventListener('mouseleave', () => player.movingLeft = false);
-btnLeft.addEventListener('touchstart', (e) => { 
-    if (e.cancelable) e.preventDefault(); 
-    if(!isPaused && !isBurning) { player.movingLeft = true; playClickSound(); } 
-}, { passive: false });
-btnLeft.addEventListener('touchend', (e) => {
-    if (e.cancelable) e.preventDefault();
-    player.movingLeft = false;
-}, { passive: false });
-
-btnRight.addEventListener('mousedown', (e) => { if(!isPaused && !isBurning) { player.movingRight = true; playClickSound(); } });
-btnRight.addEventListener('mouseup', () => player.movingRight = false);
-btnRight.addEventListener('mouseleave', () => player.movingRight = false);
-btnRight.addEventListener('touchstart', (e) => { 
-    if (e.cancelable) e.preventDefault(); 
-    if(!isPaused && !isBurning) { player.movingRight = true; playClickSound(); } 
-}, { passive: false });
-btnRight.addEventListener('touchend', (e) => {
-    if (e.cancelable) e.preventDefault();
-    player.movingRight = false;
-}, { passive: false });
-
-window.addEventListener('load', () => {
-    resizeCanvas();
-    player.x = canvas.width / 2; player.y = 520;
-    initScenery();
-});
+window.addEventListener('load', () => { resizeCanvas(); player.x = canvas.width / 2; player.y = 520; initScenery(); });
 </script>
 
 </body>
